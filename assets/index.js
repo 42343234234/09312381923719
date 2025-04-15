@@ -1,108 +1,99 @@
-
 var upload = document.querySelector(".upload");
 
 var imageInput = document.createElement("input");
 imageInput.type = "file";
-imageInput.accept = ".jpeg,.png,.gif";
+imageInput.accept = ".jpeg,.png,.gif,.jpg"; // dodałem .jpg na wszelki
 
 document.querySelectorAll(".input_holder").forEach((element) => {
-
     var input = element.querySelector(".input");
-    input.addEventListener('click', () => {
+    input.addEventListener("click", () => {
         element.classList.remove("error_shown");
-    })
-
+    });
 });
 
-upload.addEventListener('click', () => {
+upload.addEventListener("click", () => {
     imageInput.click();
 });
 
-imageInput.addEventListener('change', (event) => {
-
+imageInput.addEventListener("change", async (event) => {
     upload.classList.remove("upload_loaded");
     upload.classList.add("upload_loading");
-
-    upload.removeAttribute("selected")
+    upload.removeAttribute("selected");
 
     var file = imageInput.files[0];
+
+    if (!file) return;
+
     var data = new FormData();
     data.append("image", file);
 
-   fetch('https://api.imgur.com/3/image',{
-        method: 'POST',
-        headers: {
-            'Authorization': 'Client-ID 74fad879e8270d9'
-        },
-        body: data
-    })
-    .then(result => result.json())
-    .then(response => {
-        
-        var url = response.data.link;
-        upload.classList.remove("error_shown")
-        upload.setAttribute("selected", url);
-        upload.classList.add("upload_loaded");
+    try {
+        const res = await fetch("https://api.imgur.com/3/image", {
+            method: "POST",
+            headers: {
+                Authorization: "Client-ID 74fad879e8270d9" // Twój Client-ID
+            },
+            body: data
+        });
+
+        const response = await res.json();
+
+        if (response.success && response.data && response.data.link) {
+            const url = response.data.link;
+            upload.classList.remove("error_shown");
+            upload.setAttribute("selected", url);
+            upload.classList.add("upload_loaded");
+            upload.classList.remove("upload_loading");
+            upload.querySelector(".upload_uploaded").src = url;
+        } else {
+            throw new Error("Upload failed");
+        }
+
+    } catch (error) {
+        console.error("Upload error:", error);
+        upload.classList.add("error_shown");
         upload.classList.remove("upload_loading");
-        upload.querySelector(".upload_uploaded").src = url;
+    }
+});
 
-    })
-
-})
-
-document.querySelector(".go").addEventListener('click', () => {
-
+document.querySelector(".go").addEventListener("click", () => {
     var empty = [];
-
     var params = new URLSearchParams();
 
-    if (!upload.hasAttribute("selected")){
+    if (!upload.hasAttribute("selected")) {
         empty.push(upload);
-        upload.classList.add("error_shown")
-    }else{
+        upload.classList.add("error_shown");
+    } else {
         params.append("image", upload.getAttribute("selected"));
     }
 
     document.querySelectorAll(".input_holder").forEach((element) => {
-
         var input = element.querySelector(".input");
         params.append(input.id, input.value);
 
-        if (isEmpty(input.value)){
+        if (isEmpty(input.value)) {
             empty.push(element);
             element.classList.add("error_shown");
         }
+    });
 
-    })
-
-    if (empty.length != 0){
+    if (empty.length !== 0) {
         empty[0].scrollIntoView();
-    }else{
+    } else {
         forwardToId(params);
     }
-
 });
 
-function isEmpty(value){
-
-    let pattern = /^\s*$/
+function isEmpty(value) {
+    let pattern = /^\s*$/;
     return pattern.test(value);
-
 }
 
-function forwardToId(params){
-
-    location.href = "/yObywatel/id?" + params
-
+function forwardToId(params) {
+    location.href = "/yObywatel/id?" + params;
 }
 
 var guide = document.querySelector(".guide_holder");
-guide.addEventListener('click', () => {
-
-    if (guide.classList.contains("unfolded")){
-        guide.classList.remove("unfolded");
-    }else{
-        guide.classList.add("unfolded");
-    }
-
-})
+guide.addEventListener("click", () => {
+    guide.classList.toggle("unfolded");
+});
